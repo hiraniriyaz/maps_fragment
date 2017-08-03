@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -53,6 +54,7 @@ import retrofit.Retrofit;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener,
+        GoogleMap.OnInfoWindowClickListener,
         LocationListener {
 
     private GoogleMap mMap;
@@ -63,14 +65,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Location mLastLocation;
     Marker mCurrLocationMarker;
     LocationRequest mLocationRequest;
-    int flag = 0,flag1 = 0;
+    int flag = 0, flag1 = 0;
     private ListView m_listview;
+    Bundle extras;
+    FrameLayout frameLayout;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        frameLayout = (FrameLayout) findViewById(R.id.fragment);
 
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkLocationPermission();
@@ -80,8 +85,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (!isGooglePlayServicesAvailable()) {
             Log.d("onCreate", "Google Play Services not available. Ending Test case.");
             finish();
-        }
-        else {
+        } else {
             Log.d("onCreate", "Google Play Services available. Continuing.");
         }
 
@@ -94,14 +98,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean isGooglePlayServicesAvailable() {
         GoogleApiAvailability googleAPI = GoogleApiAvailability.getInstance();
         int result = googleAPI.isGooglePlayServicesAvailable(this);
-        if(result != ConnectionResult.SUCCESS) {
-            if(googleAPI.isUserResolvableError(result)) {
+        if (result != ConnectionResult.SUCCESS) {
+            if (googleAPI.isUserResolvableError(result)) {
                 googleAPI.getErrorDialog(this, result,
                         0).show();
             }
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void onBackPressed(){
+        frameLayout.setVisibility(View.INVISIBLE);
     }
 
     /**
@@ -138,21 +147,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
-        Button btnListView = (Button)findViewById(R.id.btnListView);
+        Button btnListView = (Button) findViewById(R.id.btnListView);
         btnListView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-//                build_retrofit_and_get_response("bank");
-//                flag1 = 1;
-//                Intent i =new Intent(MapsActivity.this,DisplayLocActivity.class);
-//                        startActivity(i);
-
-//                Fragment fragment = new Fragment();
-//                android.app.FragmentManager fm = getFragmentManager();
-//                android.app.FragmentTransaction ft = fm.beginTransaction();
-//                ft.add(R.id.fragment,fragment);
-//                ft.commit();
-                getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DisplayLocActivity()).commit();
+                if (frameLayout.getVisibility() == View.INVISIBLE){
+                    frameLayout.setVisibility(view.VISIBLE);
+                } else{
+                    getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DisplayLocActivity()).commit();
+                }
 
             }
         });
@@ -161,18 +164,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         tg1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(flag == 0){
+                if (flag == 0) {
                     mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
                     flag = 1;
-                }
-                else if(flag == 1){
+                } else if (flag == 1) {
                     mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
                     flag = 0;
                 }
+
             }
         });
-
-
     }
 
 
@@ -197,9 +198,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     mMap.clear();
                     // This loop will go through all the results and add marker on each location.
                     for (int i = 0; i < response.body().getResults().size(); i++) {
-                        Double lat = response.body().getResults().get(i).getGeometry().getLocation().getLat();
-                        Double lng = response.body().getResults().get(i).getGeometry().getLocation().getLng();
-                        String placeName = response.body().getResults().get(i).getName();
+                        final Double lat = response.body().getResults().get(i).getGeometry().getLocation().getLat();
+                        final Double lng = response.body().getResults().get(i).getGeometry().getLocation().getLng();
+                        final String placeName = response.body().getResults().get(i).getName();
                         String vicinity = response.body().getResults().get(i).getVicinity();
                         MarkerOptions markerOptions = new MarkerOptions();
                         LatLng latLng = new LatLng(lat, lng);
@@ -207,12 +208,33 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         markerOptions.position(latLng);
                         // Adding Title to the Marker
                         markerOptions.title(placeName + " : " + vicinity);
+
                         // Adding Marker to the Camera.
                         Marker m = mMap.addMarker(markerOptions);
                         m.setIcon(BitmapDescriptorFactory.fromResource(R.drawable.bank_icon3));
+                        final String formatted_address = response.body().getResults().get(i).getformatted_address();
                         // Adding colour to the marker
                         //markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
                         // move map camera
+
+                        mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener()
+                        {
+
+                           Bundle extras = new Bundle();
+                            @Override
+                            public void onInfoWindowClick(Marker marker) {
+                                Toast.makeText(MapsActivity.this,"Hello",Toast.LENGTH_LONG).show();
+                                Intent i = new Intent(MapsActivity.this,DisplayInfo.class);
+                                extras.putString("lat",lat.toString());
+                                extras.putString("long",lng.toString());
+                                extras.putString("placename",placeName);
+                                extras.putString("formatted_address",formatted_address);
+
+                                i.putExtras(extras);
+
+                                startActivity(i);
+                            }
+                        });
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
                         mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
                     }
@@ -221,6 +243,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     e.printStackTrace();
                 }
             }
+
             @Override
             public void onFailure(Throwable t) {
                 Log.d("onFailure", t.toString());
@@ -228,7 +251,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
     }
-
 
 
     protected synchronized void buildGoogleApiClient() {
@@ -296,7 +318,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-    public boolean checkLocationPermission(){
+
+    public boolean checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -359,6 +382,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             // other 'case' lines to check for other permissions this app might request.
             // You can add here other case statements according to your requirement.
         }
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+
     }
 
     // displa

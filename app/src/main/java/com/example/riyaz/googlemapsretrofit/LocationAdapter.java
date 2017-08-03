@@ -1,4 +1,5 @@
 package com.example.riyaz.googlemapsretrofit;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,7 +31,7 @@ public class LocationAdapter extends RecyclerView.Adapter<LocationAdapter.MainVi
     @Override
     public void onBindViewHolder(LocationAdapter.MainViewHolder holder, int position) {
         holder.tx_formatted_address.setText(formatted_address[position]);
-    }
+     }
 
     @Override
     public int getItemCount() {
