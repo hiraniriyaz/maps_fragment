@@ -23,8 +23,14 @@
             android:id="@+id/btnmap"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="maps" />
+            android:text="MapsView" />
 
+        <Button
+            android:id="@+id/btnListView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ListView"
+            android:layout_toEndOf="@id/btnmap"/>
 
         <ToggleButton
             android:layout_width="wrap_content"
@@ -32,16 +38,8 @@
             android:text="TERRAIN"
             android:id="@+id/toggleButton"
             android:checked="true"
-            android:layout_toEndOf="@+id/btnmap"
+            android:layout_toEndOf="@+id/btnListView"
             />
-
-        <Button
-            android:id="@+id/btnListView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ListView"
-            android:layout_toEndOf="@id/toggleButton"/>
-
         <TextView
             android:id="@+id/tv_lat"
             android:layout_width="wrap_content"
